@@ -10,8 +10,10 @@ from tqdm import tqdm
 from config import image_folder
 from config import train_file, valid_file, test_file
 
+from math import floor
 
-def get_datum(img, test_image, size, rho, top_point, patch_size):
+
+def get_datum(img, test_image, size, rho, top_point, patch_size, f):
     left_point = (top_point[0], patch_size + top_point[1])
     bottom_point = (patch_size + top_point[0], patch_size + top_point[1])
     right_point = (patch_size + top_point[0], top_point[1])
@@ -27,7 +29,13 @@ def get_datum(img, test_image, size, rho, top_point, patch_size):
         perturbed_four_points.append((point[0] + random.randint(-rho, rho), point[1] + random.randint(-rho, rho)))
 
     H = cv.getPerspectiveTransform(np.float32(four_points), np.float32(perturbed_four_points))
-    H_inverse = inv(H)
+    # debug images
+    try:
+        H_inverse = inv(H)
+    except:
+        print(f'Not able to inv(H) {f}.\nH=\n{H}\nAttempting to continue without inverse.')
+        H_inverse = H
+        
 
     warped_image = cv.warpPerspective(img, H_inverse, size)
 
@@ -70,11 +78,11 @@ def process(files, is_test):
             for top_point in [(0 + 32, 0 + 32), (128 + 32, 0 + 32), (0 + 32, 48 + 32), (128 + 32, 48 + 32),
                               (64 + 32, 24 + 32)]:
                 # top_point = (rho, rho)
-                datum = get_datum(img, test_image, size, rho, top_point, patch_size)
+                datum = get_datum(img, test_image, size, rho, top_point, patch_size, f)
                 samples.append(datum)
         else:
             top_point = (rho, rho)
-            datum = get_datum(img, test_image, size, rho, top_point, patch_size)
+            datum = get_datum(img, test_image, size, rho, top_point, patch_size, f)
             samples.append(datum)
 
     return samples
@@ -82,14 +90,22 @@ def process(files, is_test):
 
 if __name__ == "__main__":
     files = [f for f in os.listdir(image_folder) if f.lower().endswith('.jpg')]
+
+    divisor = 7
+    n_files = len(files)//divisor
+
+    files = files[:n_files] # only work part of training set. not enough memory to train it all in one go
     np.random.shuffle(files)
 
     num_files = len(files)
     print('num_files: ' + str(num_files))
 
-    num_train_files = 100000
-    num_valid_files = 8287
-    num_test_files = 10000
+    num_train_files = floor(100000//divisor)
+    num_valid_files = floor(8287//divisor)
+    num_test_files = floor(10000//divisor)
+
+    if num_train_files + num_valid_files + num_test_files > n_files:
+        print('The file split doesn\'t work.')
 
     train_files = files[:num_train_files]
     valid_files = files[num_train_files:num_train_files + num_valid_files]

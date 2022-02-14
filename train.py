@@ -9,6 +9,7 @@ from mobilenet_v2 import MobileNetV2
 from optimizer import HNetOptimizer
 from utils import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger
 
+import cv2
 
 def train_net(args):
     torch.manual_seed(7)
@@ -150,6 +151,11 @@ def valid(valid_loader, model, criterion, logger):
 
         # Keep track of metrics
         losses.update(loss.item())
+
+        # Output comparison -- doesn't work atm
+        #print('Output {i} images')
+        #cv2.imwrite(f'output_{i}_img', img)
+        #cv2.imwrite(f'output_{i}_out', out)
 
     # Print status
     status = 'Validation\t Loss {loss.avg:.5f}\n'.format(loss=losses)

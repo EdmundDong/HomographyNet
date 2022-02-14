@@ -38,6 +38,11 @@ If you want to visualize during training, run in your terminal:
 $ tensorboard --logdir runs
 ```
 
+If you want to continue training after stopping, run in your terminal:
+```bash
+$ python3 train.py --lr 0.005 --batch-size 64 --checkpoint <file.tar>
+```
+
 ## Test
 Homography Estimation Comparison on Warped MS-COCO 14 Test Set.
 ```bash

@@ -1,2 +1,7 @@
 .idea
 __pycache__/
+data/train2017/
+desktop.ini
+train2017.zip
+*.bak
+*.pkl

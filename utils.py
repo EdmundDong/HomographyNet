@@ -3,7 +3,7 @@ import logging
 import math
 
 import torch
-
+from collections import OrderedDict
 
 def clip_gradient(optimizer, grad_clip):
     """
@@ -23,12 +23,20 @@ def save_checkpoint(epoch, epochs_since_improvement, model, optimizer, loss, is_
              'loss': loss,
              'model': model,
              'optimizer': optimizer}
+
+    # create new OrderedDict that does not contain 'module.'
+    new_state_dict = OrderedDict()
+    for key, value in model.state_dict().items():
+        new_state_dict[key[7:]] = value
+    
     # filename = 'checkpoint_' + str(epoch) + '_' + str(loss) + '.tar'
     filename = 'checkpoint.tar'
     torch.save(state, filename)
+    torch.save(new_state_dict, 'model.pt')
     # If this checkpoint is the best so far, store a copy so it doesn't get overwritten by a worse checkpoint
     if is_best:
         torch.save(state, 'BEST_checkpoint.tar')
+        torch.save(new_state_dict, 'BEST_model.pt')
 
 
 class AverageMeter(object):

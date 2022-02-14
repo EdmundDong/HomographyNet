@@ -81,6 +81,9 @@ def test(args):
         img2[64:320, 64:320] = image[:, :, 1]
 
         H = compute_homo(img2, img1, args)
+        #cv2.imwrite(f'output/output{i}_1.jpg', img1)
+        #cv2.imwrite(f'output/output{i}_2.jpg', img2)
+        #print(f'output/output{i}_1.jpg: {H}')
         try:
             mace = compute_mace(H, perturbed_four_points)
             mace_list.append(mace)
