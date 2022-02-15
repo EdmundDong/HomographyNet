@@ -10,6 +10,9 @@ from data_gen import DeepHNDataset
 from mobilenet_v2 import MobileNetV2
 from utils import AverageMeter
 
+import torchvision
+from torchvision.utils import save_image
+
 device = torch.device('cpu')
 
 if __name__ == '__main__':
@@ -43,6 +46,14 @@ if __name__ == '__main__':
             out = model(img)  # [N, 8]
             end = time.time()
             elapsed = elapsed + (end - start)
+            save_image(img, f'output/img.jpg')
+            save_image(target, f'output/target.jpg')
+            with open('output/out.txt', 'w') as f:
+                for tensor in out:
+                    out_list = tensor.tolist()
+                    print(out_list)
+                    f.write(out_list)
+            exit()
 
         # Calculate loss
         out = out.squeeze(dim=1)

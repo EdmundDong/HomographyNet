@@ -10,6 +10,8 @@ from optimizer import HNetOptimizer
 from utils import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger
 
 import cv2
+import torchvision
+from torchvision.utils import save_image
 
 def train_net(args):
     torch.manual_seed(7)
@@ -54,16 +56,16 @@ def train_net(args):
     for epoch in range(start_epoch, args.end_epoch):
         model.zero_grad()
         # One epoch's training
-        train_loss = train(train_loader=train_loader,
-                           model=model,
-                           criterion=criterion,
-                           optimizer=optimizer,
-                           epoch=epoch,
-                           logger=logger)
+        # train_loss = train(train_loader=train_loader,
+        #                    model=model,
+        #                    criterion=criterion,
+        #                    optimizer=optimizer,
+        #                    epoch=epoch,
+        #                    logger=logger)
 
-        writer.add_scalar('model/train_loss', train_loss, epoch)
-        writer.add_scalar('model/learning_rate', optimizer.lr, epoch)
-        print('\nCurrent effective learning rate: {}\n'.format(optimizer.lr))
+        # writer.add_scalar('model/train_loss', train_loss, epoch)
+        # writer.add_scalar('model/learning_rate', optimizer.lr, epoch)
+        # print('\nCurrent effective learning rate: {}\n'.format(optimizer.lr))
 
         # One epoch's validation
         valid_loss = valid(valid_loader=valid_loader,
@@ -153,9 +155,12 @@ def valid(valid_loader, model, criterion, logger):
         losses.update(loss.item())
 
         # Output comparison -- doesn't work atm
-        #print('Output {i} images')
+        print('Output {i} images')
         #cv2.imwrite(f'output_{i}_img', img)
         #cv2.imwrite(f'output_{i}_out', out)
+        save_image(img, f'output/{i}_img.jpg')
+        save_image(target, f'output/{i}_target.jpg')
+        print(i, out)
 
     # Print status
     status = 'Validation\t Loss {loss.avg:.5f}\n'.format(loss=losses)
