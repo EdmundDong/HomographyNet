@@ -23,7 +23,7 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load(filename))
 
     test_dataset = DeepHNDataset('test')
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True,
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
                                               num_workers=num_workers)
 
     num_samples = len(test_dataset)
@@ -34,6 +34,7 @@ if __name__ == '__main__':
     elapsed = 0
 
     # Batches
+    index = 0
     for (img, target) in tqdm(test_loader):
         # Move to CPU, if available
         # img = F.interpolate(img, size=(img.size(2) // 2, img.size(3) // 2), mode='bicubic', align_corners=False)
@@ -46,20 +47,23 @@ if __name__ == '__main__':
             out = model(img)  # [N, 8]
             end = time.time()
             elapsed = elapsed + (end - start)
-            save_image(img, f'output/img.jpg')
-            save_image(target, f'output/target.jpg')
-            with open('output/out.txt', 'w') as f:
+            save_image(img, f'output/test/{index}img.jpg')
+            with open(f'output/test/{index}out.txt', 'w') as f:
                 for tensor in out:
-                    out_list = tensor.tolist()
+                    out_list = str(tensor.tolist())
                     print(out_list)
                     f.write(out_list)
-            exit()
 
         # Calculate loss
         out = out.squeeze(dim=1)
         loss = criterion(out * 2, target)
+        with open(f'output/test/{index}loss.txt', 'w') as f:
+            f.write(str(loss.tolist()))
 
         losses.update(loss.item(), img.size(0))
+        index = index + 1
 
     print('Elapsed: {0:.5f} ms'.format(elapsed / num_samples * 1000))
     print('Loss: {0:.2f}'.format(losses.avg))
+    with open(f'output/test/avgloss.txt', 'w') as f:
+            f.write(str(losses.avg))
