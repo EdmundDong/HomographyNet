@@ -23,11 +23,12 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
     # print('bottom_point: ' + str(bottom_point))
     # print('right_point: ' + str(right_point))
     # print('four_points: ' + str(four_points))
-
+    
     perturbed_four_points = []
     for point in four_points:
         perturbed_four_points.append((point[0] + random.randint(-rho, rho), point[1] + random.randint(-rho, rho)))
-
+    
+    """
     H = cv.getPerspectiveTransform(np.float32(four_points), np.float32(perturbed_four_points))
     # debug images
     try:
@@ -38,16 +39,20 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
         
 
     warped_image = cv.warpPerspective(img, H_inverse, size)
+    """
+    warped_image = cv.imread('data/brickyardtest/fixed.png', 0)
 
     # print('test_image.shape: ' + str(test_image.shape))
     # print('warped_image.shape: ' + str(warped_image.shape))
 
-    Ip1 = test_image[top_point[1]:bottom_point[1], top_point[0]:bottom_point[0]]
-    Ip2 = warped_image[top_point[1]:bottom_point[1], top_point[0]:bottom_point[0]]
+    #Ip1 = test_image[top_point[1]:bottom_point[1], top_point[0]:bottom_point[0]]
+    #Ip2 = warped_image[top_point[1]:bottom_point[1], top_point[0]:bottom_point[0]]
+    Ip1 = test_image
+    Ip2 = warped_image
 
     training_image = np.dstack((Ip1, Ip2))
-    cv.imwrite(f'output/preprocess/{index}img.jpg', img)
-    cv.imwrite(f'output/preprocess/{index}warp.jpg', warped_image)
+    #cv.imwrite(f'output/preprocess/{index}img.jpg', img)
+    #cv.imwrite(f'output/preprocess/{index}warp.jpg', warped_image)
     cv.imwrite(f'output/preprocess/{index}cimg.jpg', Ip1)
     cv.imwrite(f'output/preprocess/{index}cwarp.jpg', Ip2)
     # H_four_points = np.subtract(np.array(perturbed_four_points), np.array(four_points))
@@ -60,9 +65,9 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
 #   Dataset_Generation_Visualization.ipynb
 def process(files, is_test):
     if is_test:
-        size = (1920, 1088)
+        size = (1920, 1920)
         # Data gen parameters
-        patch_size = 1088
+        patch_size = 1920
         rho = int(patch_size/4)
 
     else:
@@ -95,7 +100,7 @@ def process(files, is_test):
 
 
 if __name__ == "__main__":
-    files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+    files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.jpg'))]
 
     #divisor = 7
     divisor = 1

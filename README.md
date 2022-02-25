@@ -18,6 +18,7 @@ Deep Image Homography Estimation [paper](https://arxiv.org/abs/1606.03798) imple
 
 - Python 3.6.8
 - PyTorch 1.3.0
+- imagemagick
 
 
 ## Usage
@@ -25,6 +26,7 @@ Deep Image Homography Estimation [paper](https://arxiv.org/abs/1606.03798) imple
 Extract training images:
 ```bash
 $ python3 extract.py
+$ convert image.jpeg -resize 1920x1920 -background black -gravity center -extent 1920x1920 fixed.jpg
 $ python3 pre_process.py
 ```
 
