@@ -18,6 +18,8 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
     bottom_point = (patch_size + top_point[0], patch_size + top_point[1])
     right_point = (patch_size + top_point[0], top_point[1])
     four_points = [top_point, left_point, bottom_point, right_point]
+    # 1088*1920 images shifted down by 416 in a square box
+    #four_points = [(0, 1504), (1920, 416), (0, 416), (1920, 1504)]
     # print('top_point: ' + str(top_point))
     # print('left_point: ' + str(left_point))
     # print('bottom_point: ' + str(bottom_point))
@@ -27,7 +29,8 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
     perturbed_four_points = []
     for point in four_points:
         perturbed_four_points.append((point[0] + random.randint(-rho, rho), point[1] + random.randint(-rho, rho)))
-    
+    #perturbed_four_points = [(0, 1504), (1920, 416), (0, 416), (1920, 1504)]
+    """
     """
     H = cv.getPerspectiveTransform(np.float32(four_points), np.float32(perturbed_four_points))
     # debug images
@@ -35,12 +38,14 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
         H_inverse = inv(H)
     except:
         print(f'Not able to inv(H) {f}.\nH=\n{H}\nAttempting to continue without inverse.')
-        H_inverse = H
-        
+        H_inverse = H    
 
     warped_image = cv.warpPerspective(img, H_inverse, size)
+    with open(f'output/preprocess/{index}out.txt', 'w') as f:
+        f.write(f'four_points: {four_points}\nperturbed_four_points: {perturbed_four_points}\nH: {H}\nH_inverse: {H_inverse}')
     """
-    warped_image = cv.imread('data/brickyardtest/fixed.png', 0)
+    """
+    warped_image = cv.resize(cv.imread('data/brickyardtest/sat.png', 0), size)
 
     # print('test_image.shape: ' + str(test_image.shape))
     # print('warped_image.shape: ' + str(warped_image.shape))
@@ -50,11 +55,11 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
     Ip1 = test_image
     Ip2 = warped_image
 
+    cv.imwrite(f'output/preprocess/{index}cimg.jpg', Ip1)
+    cv.imwrite(f'output/preprocess/{index}cwarp.jpg', Ip2)
     training_image = np.dstack((Ip1, Ip2))
     #cv.imwrite(f'output/preprocess/{index}img.jpg', img)
     #cv.imwrite(f'output/preprocess/{index}warp.jpg', warped_image)
-    cv.imwrite(f'output/preprocess/{index}cimg.jpg', Ip1)
-    cv.imwrite(f'output/preprocess/{index}cwarp.jpg', Ip2)
     # H_four_points = np.subtract(np.array(perturbed_four_points), np.array(four_points))
     datum = (training_image, np.array(four_points), np.array(perturbed_four_points))
     return datum
@@ -66,8 +71,10 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
 def process(files, is_test):
     if is_test:
         size = (1920, 1920)
+        #size = (640, 480)
         # Data gen parameters
         patch_size = 1920
+        #patch_size = 256
         rho = int(patch_size/4)
 
     else:
@@ -81,7 +88,7 @@ def process(files, is_test):
     for f in tqdm(files):
         fullpath = os.path.join(image_folder, f)
         img = cv.imread(fullpath, 0)
-        #img = cv.resize(img, size)
+        img = cv.resize(img, size)
         test_image = img.copy()
 
         if not is_test:
@@ -100,7 +107,7 @@ def process(files, is_test):
 
 
 if __name__ == "__main__":
-    files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.jpg'))]
+    files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.jpg', '.jpeg'))]
 
     #divisor = 7
     divisor = 1
@@ -110,13 +117,13 @@ if __name__ == "__main__":
     np.random.shuffle(files)
 
     num_files = len(files)
-    print('num_files: ' + str(num_files) + str(files))
+    #print('num_files: ' + str(num_files) + str(files))
 
     num_train_files = floor(int(num_files * 0.845)//divisor)
     num_valid_files = floor(int(num_files * 0.07)//divisor)
     num_test_files = floor(int(num_files * 0.085)//divisor)
     num_train_files = num_valid_files = 0
-    num_test_files = num_files
+    num_test_files = min(num_files, 50)
 
     if num_train_files + num_valid_files + num_test_files > n_files:
         print('The file split doesn\'t work.')

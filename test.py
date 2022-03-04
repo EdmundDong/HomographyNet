@@ -5,13 +5,16 @@ from torch import nn
 from torch.nn import functional as F
 from tqdm import tqdm
 
-from config import batch_size, num_workers
+from config import batch_size, num_workers, im_size
 from data_gen import DeepHNDataset
 from mobilenet_v2 import MobileNetV2
 from utils import AverageMeter
 
 import torchvision
 from torchvision.utils import save_image
+import numpy as np
+import cv2 as cv
+from numpy.linalg import inv
 
 device = torch.device('cpu')
 
@@ -47,18 +50,44 @@ if __name__ == '__main__':
             out = model(img)  # [N, 8]
             end = time.time()
             elapsed = elapsed + (end - start)
-            save_image(img, f'output/test/{index}img.jpg')
-            with open(f'output/test/{index}out.txt', 'w') as f:
-                for tensor in out:
-                    out_list = str(tensor.tolist())
-                    print(out_list)
-                    f.write(out_list)
+        
+        img1, img2, _ = torch.unbind(img, dim=1)
+        save_image(img, f'output/test/{index}in.jpg')
+        save_image(img1, f'output/test/{index}in_og.jpg')
+        save_image(img2, f'output/test/{index}in_warp.jpg')
+        img1 = cv.imread(f'output/test/{index}in_og.jpg', 0)
+        img2 = cv.imread(f'output/test/{index}in_warp.jpg', 0)
+        out2 = out.squeeze(dim=1)
 
+        size = (1920, 1920)
+        size = (im_size, im_size)
+        out_list = out2[0].tolist()
+        x1 = np.array(out_list)
+        x2 = np.array([256, 256, 256, 1280, 1280, 1280, 1280, 256])
+        x2 = np.array([64, 64, 64, 320, 320, 320, 320, 64])
+        seq = iter(np.add(x1, x2))
+        four_points = [(256, 256), (256, 1280), (1280, 1280), (1280, 256)]
+        four_points = [(64, 64), (64, 320), (320, 320), (320, 64)]
+        perturbed_four_points = [(round(data), round(next(seq))) for data in seq]
+        # [(256, 256), (256, 1280), (1280, 1280), (1280, 256)] <class 'list'> [(391, 244), (163, 1046), (1449, 1334), (1144, 473)] <class 'list'>
+        #print(four_points, type(four_points), perturbed_four_points, type(perturbed_four_points))
+        H = cv.getPerspectiveTransform(np.float32(perturbed_four_points), np.float32(four_points))
+        H_inverse = inv(H)
+        img3 = cv.warpPerspective(np.array(img1), H_inverse, size)
+        cv.imwrite(f'output/test/{index}out.jpg', img3)
+        
         # Calculate loss
-        out = out.squeeze(dim=1)
-        loss = criterion(out * 2, target)
-        with open(f'output/test/{index}loss.txt', 'w') as f:
-            f.write(str(loss.tolist()))
+        
+        loss = criterion(out2 * 2, target)
+        print(index, loss)
+        # with open(f'output/test/{index}loss.txt', 'w') as f:
+        #     f.write(str(loss.tolist()))
+
+        with open(f'output/test/{index}out.txt', 'w') as f:
+            for tensor in out:
+                out_list = str(tensor.tolist())
+                #print(out_list)
+                f.write(f'Model Output: {out_list}\nTarget: {target[0].tolist()}\nOut2: {out2[0].tolist()}\nout2 * 2: {(out2 * 2)[0].tolist()}\nLoss: {loss}')
 
         losses.update(loss.item(), img.size(0))
         index = index + 1
