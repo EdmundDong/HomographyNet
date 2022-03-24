@@ -1,17 +1,15 @@
-import numpy as np
 import torch
 from torch import nn
+from torchvision.utils import save_image
 from torch.utils.tensorboard import SummaryWriter
 
-from config import device, grad_clip, print_freq, num_workers
+import numpy as np
 from data_gen import DeepHNDataset
-from mobilenet_v2 import MobileNetV2
 from optimizer import HNetOptimizer
+from mobilenet_v2 import MobileNetV2
+from config import device, grad_clip, print_freq, num_workers
 from utils import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger
 
-import cv2
-import torchvision
-from torchvision.utils import save_image
 
 def train_net(args):
     torch.manual_seed(7)
@@ -26,7 +24,6 @@ def train_net(args):
     if checkpoint is None:
         model = MobileNetV2()
         model = nn.DataParallel(model)
-
         optimizer = HNetOptimizer(torch.optim.Adam(model.parameters(), lr=args.lr))
 
     else:
@@ -46,33 +43,22 @@ def train_net(args):
 
     # Custom dataloaders
     train_dataset = DeepHNDataset('train')
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                                               num_workers=num_workers)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
     valid_dataset = DeepHNDataset('valid')
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False,
-                                               num_workers=num_workers)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
 
     # Epochs
     for epoch in range(start_epoch, args.end_epoch):
         model.zero_grad()
-        # One epoch's training
-        # train_loss = train(train_loader=train_loader,
-        #                    model=model,
-        #                    criterion=criterion,
-        #                    optimizer=optimizer,
-        #                    epoch=epoch,
-        #                    logger=logger)
 
-        # writer.add_scalar('model/train_loss', train_loss, epoch)
-        # writer.add_scalar('model/learning_rate', optimizer.lr, epoch)
-        # print('\nCurrent effective learning rate: {}\n'.format(optimizer.lr))
+        # One epoch's training
+        train_loss = train(train_loader, model, criterion, optimizer, epoch, logger)
+        writer.add_scalar('model/train_loss', train_loss, epoch)
+        writer.add_scalar('model/learning_rate', optimizer.lr, epoch)
+        print('\nCurrent effective learning rate: {}\n'.format(optimizer.lr))
 
         # One epoch's validation
-        valid_loss = valid(valid_loader=valid_loader,
-                           model=model,
-                           criterion=criterion,
-                           logger=logger)
-
+        valid_loss = valid(valid_loader, model, criterion, logger)
         writer.add_scalar('model/valid_loss', valid_loss, epoch)
 
         # Check if there was an improvement
@@ -90,44 +76,25 @@ def train_net(args):
 
 def train(train_loader, model, criterion, optimizer, epoch, logger):
     model.train()  # train mode (dropout and batchnorm is used)
-
     losses = AverageMeter()
 
     # Batches
     for i, (img, target) in enumerate(train_loader):
-        # Move to GPU, if available
         img = img.to(device)
         target = target.float().to(device)  # [N, 8]
-
-        # Forward prop.
-        out = model(img)  # [N, 8]
+        out = model(img)  # Forward prop. # [N, 8]
         out = out.squeeze(dim=1)
-
-        # Calculate loss
-        loss = criterion(out, target)
-
-        # Back prop.
-        optimizer.zero_grad()
+        loss = criterion(out, target) # Calculate loss
+        optimizer.zero_grad() # Back prop.
         loss.backward()
-
-        # Clip gradients
-        # clip_gradient(optimizer, grad_clip)
-
-        # Update weights
-        optimizer.step()
-
-        # Keep track of metrics
-        losses.update(loss.item())
+        #clip_gradient(optimizer, grad_clip) # Clip gradients
+        optimizer.step() # Update weights
+        losses.update(loss.item()) # Keep track of metrics
 
         # Print status
         if i % print_freq == 0:
             if i % print_freq == 0:
-                status = 'Epoch: [{0}][{1}/{2}]\t' \
-                         'Loss {loss.val:.5f} ({loss.avg:.5f})'.format(epoch, i,
-                                                                       len(train_loader),
-                                                                       loss=losses,
-
-                                                                       )
+                status = 'Epoch: [{0}][{1}/{2}]\tLoss {loss.val:.5f} ({loss.avg:.5f})'.format(epoch, i, len(train_loader), loss=losses,)
                 logger.info(status)
 
     return losses.avg
@@ -135,32 +102,16 @@ def train(train_loader, model, criterion, optimizer, epoch, logger):
 
 def valid(valid_loader, model, criterion, logger):
     model.eval()  # eval mode (dropout and batchnorm is NOT used)
-
     losses = AverageMeter()
 
     # Batches
     for i, (img, target) in enumerate(valid_loader):
-        # Move to GPU, if available
         img = img.to(device)
         target = target.float().to(device)
-
-        # Forward prop.
-        out = model(img)
+        out = model(img) # Forward prop.
         out = out.squeeze(dim=1)
-
-        # Calculate loss
-        loss = criterion(out, target)
-
-        # Keep track of metrics
-        losses.update(loss.item())
-
-        # Output comparison -- doesn't work atm
-        print('Output {i} images')
-        #cv2.imwrite(f'output_{i}_img', img)
-        #cv2.imwrite(f'output_{i}_out', out)
-        save_image(img, f'output/{i}_img.jpg')
-        save_image(target, f'output/{i}_target.jpg')
-        print(i, out)
+        loss = criterion(out, target) # Calculate loss
+        losses.update(loss.item()) # Keep track of metrics
 
     # Print status
     status = 'Validation\t Loss {loss.avg:.5f}\n'.format(loss=losses)
@@ -168,12 +119,7 @@ def valid(valid_loader, model, criterion, logger):
 
     return losses.avg
 
-
-def main():
+if __name__ == '__main__':
     global args
     args = parse_args()
     train_net(args)
-
-
-if __name__ == '__main__':
-    main()

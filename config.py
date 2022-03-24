@@ -9,10 +9,10 @@ batch_size = 1
 #num_train = 500000
 #num_valid = 41435
 #num_test = 10000
-image_folder = 'data/brickyardtest'
+image_folder = 'data/train2017'
 train_file = 'data/train.pkl'
 valid_file = 'data/valid.pkl'
-test_file = 'data/test.pkl'
+test_file = 'test_identity_result'
 
 # Training parameters
 num_workers = 8  # for data-loading

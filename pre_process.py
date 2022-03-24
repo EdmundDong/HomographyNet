@@ -1,66 +1,49 @@
 import os
 import pickle
 import random
-
 import cv2 as cv
 import numpy as np
-from numpy.linalg import inv
 from tqdm import tqdm
+from math import ceil
+from numpy.linalg import inv
+from config import train_file, valid_file, test_file, image_folder, im_size
 
-from config import image_folder
-from config import train_file, valid_file, test_file
-
-from math import floor
-
+debug_identity = True
 
 def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
     left_point = (top_point[0], patch_size + top_point[1])
     bottom_point = (patch_size + top_point[0], patch_size + top_point[1])
     right_point = (patch_size + top_point[0], top_point[1])
     four_points = [top_point, left_point, bottom_point, right_point]
-    # 1088*1920 images shifted down by 416 in a square box
-    #four_points = [(0, 1504), (1920, 416), (0, 416), (1920, 1504)]
-    # print('top_point: ' + str(top_point))
-    # print('left_point: ' + str(left_point))
-    # print('bottom_point: ' + str(bottom_point))
-    # print('right_point: ' + str(right_point))
-    # print('four_points: ' + str(four_points))
     
     perturbed_four_points = []
     for point in four_points:
         perturbed_four_points.append((point[0] + random.randint(-rho, rho), point[1] + random.randint(-rho, rho)))
-    #perturbed_four_points = [(0, 1504), (1920, 416), (0, 416), (1920, 1504)]
-    """
-    """
+    
     H = cv.getPerspectiveTransform(np.float32(four_points), np.float32(perturbed_four_points))
-    # debug images
+    
     try:
         H_inverse = inv(H)
     except:
         print(f'Not able to inv(H) {f}.\nH=\n{H}\nAttempting to continue without inverse.')
-        H_inverse = H    
-
+        H_inverse = H
     warped_image = cv.warpPerspective(img, H_inverse, size)
-    with open(f'output/preprocess/{index}out.txt', 'w') as f:
-        f.write(f'four_points: {four_points}\nperturbed_four_points: {perturbed_four_points}\nH: {H}\nH_inverse: {H_inverse}')
-    """
-    """
-    warped_image = cv.resize(cv.imread('data/brickyardtest/sat.png', 0), size)
-
-    # print('test_image.shape: ' + str(test_image.shape))
-    # print('warped_image.shape: ' + str(warped_image.shape))
-
+    #warped_image = cv.resize(cv.imread('data/brickyardtest/sat.png', 0), size)
+    if debug_identity:
+        warped_image = test_image
+    
+    # crop images
     #Ip1 = test_image[top_point[1]:bottom_point[1], top_point[0]:bottom_point[0]]
     #Ip2 = warped_image[top_point[1]:bottom_point[1], top_point[0]:bottom_point[0]]
-    Ip1 = test_image
-    Ip2 = warped_image
 
-    cv.imwrite(f'output/preprocess/{index}cimg.jpg', Ip1)
-    cv.imwrite(f'output/preprocess/{index}cwarp.jpg', Ip2)
-    training_image = np.dstack((Ip1, Ip2))
-    #cv.imwrite(f'output/preprocess/{index}img.jpg', img)
-    #cv.imwrite(f'output/preprocess/{index}warp.jpg', warped_image)
-    # H_four_points = np.subtract(np.array(perturbed_four_points), np.array(four_points))
+    # export
+    cv.imwrite(f'output/preprocess/{index}img.jpg', test_image)
+    cv.imwrite(f'output/preprocess/{index}perturb.jpg', warped_image)
+    H_four_points = np.subtract(np.array(perturbed_four_points), np.array(four_points))
+    with open(f'output/preprocess/{index}out.txt', 'w') as f:
+        f.write(f'four_points: {four_points}\nperturbed_four_points: {perturbed_four_points}\nH:\n{H}\nH_inverse:\n{H_inverse}\nH_four_points:\n{H_four_points}')
+
+    training_image = np.dstack((test_image, warped_image))
     datum = (training_image, np.array(four_points), np.array(perturbed_four_points))
     return datum
 
@@ -69,19 +52,20 @@ def get_datum(img, test_image, size, rho, top_point, patch_size, f, index = 0):
 #   https://github.com/mez/deep_homography_estimation
 #   Dataset_Generation_Visualization.ipynb
 def process(files, is_test):
+    
+    # Data gen parameters
+    size = (im_size, im_size)
     if is_test:
-        size = (1920, 1920)
         #size = (640, 480)
-        # Data gen parameters
-        patch_size = 1920
         #patch_size = 256
-        rho = int(patch_size/4)
-
+        patch_size = im_size
+        rho = patch_size//4
     else:
-        size = (320, 240)
-        # Data gen parameters
-        rho = 32
-        patch_size = 128
+        #size = (320, 240)
+        #patch_size = 128
+        size = size//2
+        patch_size = im_size
+        rho = patch_size//4
 
     samples = []
     index = 0
@@ -92,9 +76,7 @@ def process(files, is_test):
         test_image = img.copy()
 
         if not is_test:
-            for top_point in [(0 + 32, 0 + 32), (128 + 32, 0 + 32), (0 + 32, 48 + 32), (128 + 32, 48 + 32),
-                              (64 + 32, 24 + 32)]:
-                # top_point = (rho, rho)
+            for top_point in [(0 + patch_size//8, 0 + patch_size//8), (patch_size//2 + patch_size//8, 0 + patch_size//8), (0 + patch_size//8, patch_size//2 + patch_size//8), (patch_size//2 + patch_size//8, patch_size*16//3 + patch_size//8), (patch_size//4 + patch_size//8, patch_size*8//3 + patch_size//8)]:
                 datum = get_datum(img, test_image, size, rho, top_point, patch_size, f, index)
                 samples.append(datum)
         else:
@@ -108,25 +90,21 @@ def process(files, is_test):
 
 if __name__ == "__main__":
     files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.jpg', '.jpeg'))]
-
-    #divisor = 7
-    divisor = 1
-    n_files = len(files)//divisor
-
-    files = files[:n_files] # only work part of training set. not enough memory to train it all in one go
-    np.random.shuffle(files)
+    if not os.path.isdir('output/preprocess'):
+        os.makedirs('output/preprocess')
 
     num_files = len(files)
-    #print('num_files: ' + str(num_files) + str(files))
-
-    num_train_files = floor(int(num_files * 0.845)//divisor)
-    num_valid_files = floor(int(num_files * 0.07)//divisor)
-    num_test_files = floor(int(num_files * 0.085)//divisor)
+    if len(files) > 70000:
+        divisor = ceil(len(files)/70000)
+    np.random.shuffle(files)
+    num_train_files = (num_files * 0.845)//divisor
+    num_valid_files = (num_files * 0.07)//divisor
+    num_test_files = (num_files * 0.085)//divisor
     num_train_files = num_valid_files = 0
     num_test_files = min(num_files, 50)
 
-    if num_train_files + num_valid_files + num_test_files > n_files:
-        print('The file split doesn\'t work.')
+    if num_train_files + num_valid_files + num_test_files > num_files//divisor:
+        print('The file split doesn\'t work. You might run out of RAM.')
 
     train_files = files[:num_train_files]
     valid_files = files[num_train_files:num_train_files + num_valid_files]

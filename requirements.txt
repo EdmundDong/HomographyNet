@@ -1,3 +1,18 @@
-# This file may be used to create an environment using:
-# $ conda create --name <env> --file <this file>
-# platform: linux-64
+# All installed using pip
+# Setup (maybe)
+# Install https://developer.nvidia.com/cuda/wsl on Windows
+# Install https://www.nvidia.com/download/index.aspx on Windows
+# Setup (definitely)
+# WSL kernel 5.10.43.3 or higher ('wsl cat /proc/version' in Powershell)
+# 'pip3 install torch torchvision torchaudio torchsummary opencv-contrib-python tqdm typing_extensions requests'
+# Run 'sudo ./NVIDIA-Linux-x86_64-510.60.02.run' in WSL
+# Probably need to run 'sudo su ./NVIDIA-Linux-x86_64-510.60.02.run --silent --driver'
+
+numpy==1.22.3
+opencv-contrib-python==4.5.5.64
+Pillow==9.0.1
+torch==1.11.0
+torchaudio==0.11.0
+torchsummary==1.5.1
+torchvision==0.12.0
+tqdm==4.63.1

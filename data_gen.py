@@ -1,11 +1,8 @@
 import pickle
-
 import cv2 as cv
 import numpy as np
-from torch.utils.data import Dataset
-
 from config import im_size
-
+from torch.utils.data import Dataset
 
 class DeepHNDataset(Dataset):
     def __init__(self, split):
@@ -35,12 +32,10 @@ class DeepHNDataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
-
 if __name__ == "__main__":
     train = DeepHNDataset('train')
     print('num_train: ' + str(len(train)))
     valid = DeepHNDataset('valid')
     print('num_valid: ' + str(len(valid)))
-
     print(train[0])
     print(valid[0])
