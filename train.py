@@ -7,7 +7,7 @@ import numpy as np
 from data_gen import DeepHNDataset
 from optimizer import HNetOptimizer
 from mobilenet_v2 import MobileNetV2
-from config import device, grad_clip, print_freq, num_workers
+from config import device, grad_clip, print_freq, num_workers, train_file, valid_file
 from utils import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger
 
 
@@ -42,10 +42,12 @@ def train_net(args):
     criterion = nn.MSELoss().to(device)
 
     # Custom dataloaders
-    train_dataset = DeepHNDataset('train')
+    train_dataset = DeepHNDataset(train_file)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
-    valid_dataset = DeepHNDataset('valid')
+    train_loader.to(device)
+    valid_dataset = DeepHNDataset(valid_file)
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
+    valid_loader.to(device)
 
     # Epochs
     for epoch in range(start_epoch, args.end_epoch):

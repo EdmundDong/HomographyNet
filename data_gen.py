@@ -2,17 +2,20 @@ import pickle
 import cv2 as cv
 import numpy as np
 from config import im_size
+from torch import tensor
 from torch.utils.data import Dataset
 
 class DeepHNDataset(Dataset):
     def __init__(self, split):
-        filename = 'data/{}.pkl'.format(split)
+        filename = '{}'.format(split)
         print('loading {}...'.format(filename))
         with open(filename, 'rb') as file:
             samples = pickle.load(file)
         #np.random.shuffle(samples)
         self.split = split
         self.samples = samples
+        print([(len(sample[1]), type(sample[1])) for sample in samples])
+        self.samples = tensor(samples)
 
     def __getitem__(self, i):
         sample = self.samples[i]
