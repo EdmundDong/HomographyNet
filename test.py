@@ -40,6 +40,12 @@ def data_export():
             f.write(f'Model Output: {str(tensor.tolist())}\nTarget: {target[0].tolist()}\nOut2: {out2[0].tolist()}\nout2 * 2: {(out2*2)[0].tolist()}\nLoss: {loss}\n')
             f.write(f'H:\n{H}\nH:\n{np.array2string(H, suppress_small=True)}\nH_inverse:\n{H_inverse}\nH_inverse:\n{np.array2string(H_inverse, suppress_small=True)}\n')
             f.write(f'H_four_points:\n{np.subtract(np.array(perturbed_four_points), np.array(four_points))}')
+    with open(f'output/test/out.txt', 'a') as f:
+        for tensor in out:
+            f.write(f'{index}: {str(tensor.tolist())}\n')
+    with open(f'output/test/H.txt', 'a') as f:
+        for tensor in out:
+            f.write(f'{index}:\n{H}\n')
 
 if __name__ == '__main__':
     begin = time.time()
@@ -62,6 +68,10 @@ if __name__ == '__main__':
 
     if not os.path.isdir('output/test'):
         os.makedirs('output/test')
+    with open(f'output/test/out.txt', 'w') as f:
+        f.write('')
+    with open(f'output/test/H.txt', 'w') as f:
+        f.write('')
 
     # Batches
     index = 0
