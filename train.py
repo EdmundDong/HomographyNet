@@ -44,10 +44,10 @@ def train_net(args):
     # Custom dataloaders
     train_dataset = DeepHNDataset(train_file)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
-    train_loader.to(device)
+    #train_loader.to(device)
     valid_dataset = DeepHNDataset(valid_file)
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
-    valid_loader.to(device)
+    #valid_loader.to(device)
 
     # Epochs
     for epoch in range(start_epoch, args.end_epoch):
