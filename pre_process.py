@@ -7,9 +7,11 @@ from tqdm import tqdm
 from math import ceil
 from numpy.linalg import inv
 from natsort import natsorted
+from PIL import Image, ImageOps
 from config import train_file, valid_file, test_file, image_folder, im_size
 
 debug_identity = False
+generate_series = True
 
 ### This function is provided by Mez Gebre's repository "deep_homography_estimation"
 #   https://github.com/mez/deep_homography_estimation
@@ -35,16 +37,52 @@ def process(files, is_test):
     for (f1, m, f2) in tqdm(files):
         fullpath1 = os.path.join(image_folder, f1)
         fullpath2 = os.path.join(image_folder, f2)
-        img1 = cv.imread(fullpath1, 0)
-        img2 = cv.imread(fullpath2, 0)
-        img1 = cv.resize(img1, size)
-        img2 = cv.resize(img2, size)
-        if debug_identity:
-            img2 = img1
-        training_image = np.dstack((img1, img2))
-        
-        four_points = perturbed_four_points = np.zeros((4,2))
-        samples.append((training_image, np.array(four_points), np.array(perturbed_four_points)))
+        #img1 = cv.imread(fullpath1, 0)
+        #img2 = cv.imread(fullpath2, 0)
+        #img1 = cv.resize(img1, size)
+        #img2 = cv.resize(img2, size)
+        img1 = Image.open(fullpath1)
+        img2 = Image.open(fullpath2)
+        img1 = ImageOps.grayscale(img1)
+        img2 = ImageOps.grayscale(img2)
+        color = 'black'
+        img1 = ImageOps.pad(img1, size, color=color)
+        img2 = ImageOps.pad(img2, size, color=color)
+        #img1.show()
+        #img2.show()
+        img1 = np.asarray(img1)
+        img2 = np.asarray(img2)
+
+        if generate_series:
+            num_transforms = 20
+            for index in range(num_transforms + 1):
+                offset = size[0] * 2 * index/num_transforms
+                shift_top = offset
+                shift_bottom = offset/8
+                drop_top = offset
+                drop_bottom = offset/16
+                four_points = [(0,0),(0,size[0]),(size[0],size[0]),(size[0],0)]
+                perturbed_four_points = [(-shift_top,-drop_top),(shift_bottom,size[0]-drop_bottom),(size[0]-shift_bottom,size[0]-drop_bottom),(size[0]+shift_top,-drop_top)]
+                H = cv.getPerspectiveTransform(np.float32(four_points), np.float32(perturbed_four_points))
+                warped_image = cv.warpPerspective(img1, inv(H), size)
+                #cv.imshow('img1', img1)
+                #cv.imshow('warped_image', warped_image)
+                #cv.waitKey()
+                cv.imwrite(f'output/preprocess/{index}img.jpg', img1)
+                cv.imwrite(f'output/preprocess/{index}perturb.jpg', warped_image)
+                with open(f'output/preprocess/{index}out.txt', 'w') as f:
+                    H_four_points = np.subtract(np.array(perturbed_four_points), np.array(four_points))
+                    target = np.reshape(H_four_points, (8,))
+                    f.write(f'target: {target}\nH:\n{H}\ninv(H):\n{inv(H)}')
+                training_image = np.dstack((img1, warped_image))
+                samples.append((training_image, np.array(four_points), np.array(perturbed_four_points)))
+        else:
+            if debug_identity:
+                img2 = img1
+            training_image = np.dstack((img1, img2))
+            
+            four_points = perturbed_four_points = np.zeros((4,2))
+            samples.append((training_image, np.array(four_points), np.array(perturbed_four_points)))
         
         index = index + 1
 
@@ -61,9 +99,13 @@ if __name__ == "__main__":
     # tuple form: (f1, m, f2) for file1, matrix, file2
     print(f'files{files}')
     files_new = []
-    for index in range(1, len(files), 3):
-        print(f'{files[index - 1]}, {files[index]}, {files[index + 1]}')
-        files_new.append((files[index - 1], files[index], files[index + 1]))
+    if generate_series:
+        for index in range(0, len(files)):
+            files_new.append((files[index], None, files[index]))
+    else: 
+        for index in range(1, len(files), 3):
+            print(f'{files[index - 1]}, {files[index]}, {files[index + 1]}')
+            files_new.append((files[index - 1], files[index], files[index + 1]))
     files = files_new
 
     num_files = len(files)

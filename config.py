@@ -2,14 +2,14 @@ import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # sets device for model and PyTorch tensors
 
-im_size = 600
+im_size = 300
 batch_size = 1
 
 #num_samples = 118287
 #num_train = 500000
 #num_valid = 41435
 #num_test = 10000
-image_folder = 'data/test'
+image_folder = 'data/test2'
 output_folder = image_folder[image_folder.find('/') + 1:]
 train_file = 'data/train.pkl'
 valid_file = 'data/valid.pkl'
