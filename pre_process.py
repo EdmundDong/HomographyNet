@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 from config import train_file, valid_file, test_file, image_folder, im_size
 
 debug_identity = False
-generate_series = True
+generate_series = False
 
 ### This function is provided by Mez Gebre's repository "deep_homography_estimation"
 #   https://github.com/mez/deep_homography_estimation
@@ -34,7 +34,7 @@ def process(files, is_test):
 
     samples = []
     index = 0
-    for (f1, m, f2) in tqdm(files):
+    for (f1, f2, m) in tqdm(files):
         fullpath1 = os.path.join(image_folder, f1)
         fullpath2 = os.path.join(image_folder, f2)
         #img1 = cv.imread(fullpath1, 0)
@@ -81,6 +81,17 @@ def process(files, is_test):
                 img2 = img1
             training_image = np.dstack((img1, img2))
             
+            four_points = np.zeros((4,2))
+            perturbed_four_points = np.zeros((4,2))
+            with open(os.path.join(image_folder, m), 'r') as file:
+                for point in range(4):
+                    four_points[point] = file.readline().strip().split(' ')
+                for point in range(4):
+                    perturbed_four_points[point] = file.readline().strip().split(' ')
+            # print(m)
+            # print(four_points)
+            # print(perturbed_four_points)
+
             four_points = perturbed_four_points = np.zeros((4,2))
             samples.append((training_image, np.array(four_points), np.array(perturbed_four_points)))
         
@@ -97,14 +108,14 @@ if __name__ == "__main__":
 
     # create tuples of images and matricies that go together, new tuples are `files`
     # tuple form: (f1, m, f2) for file1, matrix, file2
-    print(f'files{files}')
+    #print(f'files{files}')
     files_new = []
     if generate_series:
         for index in range(0, len(files)):
             files_new.append((files[index], None, files[index]))
     else: 
         for index in range(1, len(files), 3):
-            print(f'{files[index - 1]}, {files[index]}, {files[index + 1]}')
+            #print(f'{files[index - 1]}, {files[index]}, {files[index + 1]}')
             files_new.append((files[index - 1], files[index], files[index + 1]))
     files = files_new
 
@@ -124,7 +135,7 @@ if __name__ == "__main__":
     #num_train_files = num_valid_files = 0
     #num_test_files = min(num_files, 50)
 
-    print(f'num_files={num_files}, num_train_files={num_train_files}, num_valid_files={num_valid_files}, num_test_files={num_test_files}')
+    #print(f'num_files={num_files}, num_train_files={num_train_files}, num_valid_files={num_valid_files}, num_test_files={num_test_files}')
 
     if num_train_files + num_valid_files + num_test_files > num_files//divisor:
         print('File split invalid.')
@@ -134,9 +145,9 @@ if __name__ == "__main__":
     valid_files = files[num_train_files:num_train_files + num_valid_files]
     test_files = files[num_train_files + num_valid_files:num_train_files + num_valid_files + num_test_files]
 
-    print(f'train_files{train_files}')
-    print(f'valid_files{valid_files}')
-    print(f'test_files{test_files}')
+    # print(f'train_files{train_files}')
+    # print(f'valid_files{valid_files}')
+    # print(f'test_files{test_files}')
 
     train = process(train_files, False)
     valid = process(valid_files, False)
