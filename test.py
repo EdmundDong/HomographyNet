@@ -49,7 +49,7 @@ def data_export():
 
 if __name__ == '__main__':
     begin = time.time()
-    filename = 'BEST_model.pt'
+    filename = 'test_model.pt'
 
     print('loading {}...'.format(filename))
     model = MobileNetV2()
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         losses.update(loss.item(), img.size(0))
 
         data_export()
-        print(f'Loss for {index}: {loss}')
+        # print(f'Loss for {index}: {loss}')
         index = index + 1
 
     print('Avg Inference Time: {0:.5f} ms'.format(elapsed / num_samples * 1000))

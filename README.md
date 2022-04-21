@@ -44,6 +44,12 @@ If you want to continue training after stopping, run in your terminal:
 ```bash
 $ python3 train.py --lr 0.005 --batch-size 64 --checkpoint <file.tar>
 ```
+examples: 
+```bash
+$ python3 train.py --lr 0.005 --batch-size 64 --checkpoint BEST_checkpoint.tar
+$ python3 train.py --lr 0.005 --batch-size 64 --checkpoint checkpoint.tar --end-epoch 2000
+$ python3 train.py --lr 0.005 --batch-size 64 --checkpoint checkpoint.tar --end-epoch 10000
+```
 
 ## Test
 Homography Estimation Comparison on Warped MS-COCO 14 Test Set.

@@ -9,6 +9,8 @@ from numpy.linalg import inv
 from natsort import natsorted
 from PIL import Image, ImageOps
 from config import train_file, valid_file, test_file, image_folder, im_size
+from torch import from_numpy
+from torchvision.utils import save_image
 
 debug_identity = False
 generate_series = False
@@ -92,7 +94,19 @@ def process(files, is_test):
             # print(four_points)
             # print(perturbed_four_points)
 
-            four_points = perturbed_four_points = np.zeros((4,2))
+            training_image0 = training_image[:, :, 0]
+            training_image0 = cv.resize(training_image0, (im_size, im_size))
+            training_image1 = training_image[:, :, 1]
+            training_image1 = cv.resize(training_image1, (im_size, im_size))
+            training_image2 = np.zeros((im_size, im_size, 3), np.float32)
+            training_image2[:, :, 0] = training_image0 / 255.
+            training_image2[:, :, 1] = training_image1 / 255.
+            training_image2 = np.transpose(training_image2, (2, 0, 1))  # HxWxC array to CxHxW
+            save_image(from_numpy(training_image2), f'output/preprocess/{index}img.jpg')
+            with open(f'output/preprocess/{index}matrix.txt', 'w') as f:
+                H_four_points = np.subtract(np.array(perturbed_four_points), np.array(four_points))
+                target = np.reshape(H_four_points, (8,))
+                f.write(f'target: {target}\nfour_points:\n{four_points}\nperturbed_four_points:\n{perturbed_four_points}')
             samples.append((training_image, np.array(four_points), np.array(perturbed_four_points)))
         
         index = index + 1
@@ -161,5 +175,5 @@ if __name__ == "__main__":
         pickle.dump(train, f)
     with open(valid_file, 'wb') as f:
         pickle.dump(valid, f)
-    with open(test_file, 'wb') as f:
-        pickle.dump(test, f)
+    # with open(test_file, 'wb') as f:
+    #     pickle.dump(test, f)
