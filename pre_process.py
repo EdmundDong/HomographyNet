@@ -137,11 +137,11 @@ if __name__ == "__main__":
     divisor = 1
     if len(files) > 70000:
         divisor = ceil(len(files)/70000)
-    #np.random.shuffle(files)
+    np.random.shuffle(files)
     ratio_train = ratio_valid = ratio_test = 0
     ratio_train = 0.845
     ratio_valid = 0.07
-    #ratio_test = 0.085
+    ratio_test = 0.085
     ratio_ratio = 1 / (ratio_train + ratio_valid + ratio_test)
     num_train_files = int(round((num_files * ratio_train * ratio_ratio)/divisor))
     num_valid_files = int(round((num_files * ratio_valid * ratio_ratio)/divisor))

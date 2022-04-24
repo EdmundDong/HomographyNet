@@ -28,7 +28,7 @@ def data_export():
     H_inverse = inv(H)
     img3 = cv.warpPerspective(np.array(img1).copy(), H_inverse, size)
     cv.imwrite(f'output/test/{index}out.jpg', img3)
-    img4 = cv.imread(f'output/test/{index}in_og.jpg', 0)
+    img4 = cv.imread(f'output/test/{index}in-f1.jpg', 0)
     img5 = cv.imread(f'output/test/{index}out.jpg', 0)
     img6 = np.zeros((im_size, im_size, 3), np.float32)
     img6[:, :, 0] = img4 / 255.
@@ -49,7 +49,7 @@ def data_export():
 
 if __name__ == '__main__':
     begin = time.time()
-    filename = 'test_model.pt'
+    filename = 'BEST_model.pt'
 
     print('loading {}...'.format(filename))
     model = MobileNetV2()
@@ -87,10 +87,10 @@ if __name__ == '__main__':
         
         img1, img2, _ = torch.unbind(img, dim=1)
         save_image(img, f'output/test/{index}in.jpg')
-        save_image(img1, f'output/test/{index}in_og.jpg')
-        save_image(img2, f'output/test/{index}in_warp.jpg')
-        img1 = cv.imread(f'output/test/{index}in_og.jpg', 0)
-        img2 = cv.imread(f'output/test/{index}in_warp.jpg', 0)
+        save_image(img1, f'output/test/{index}in-f1.jpg')
+        save_image(img2, f'output/test/{index}in-f2.jpg')
+        img1 = cv.imread(f'output/test/{index}in-f1.jpg', 0)
+        img2 = cv.imread(f'output/test/{index}in-f2.jpg', 0)
         
         # Calculate loss
         out2 = out.squeeze(dim=1)
